@@ -12,7 +12,8 @@
 
 import { writeFile } from "node:fs/promises";
 
-const KEY = process.env.TMDB_API_KEY;
+// Tolerate common paste mistakes in the secret: spaces, line breaks, quotes, a leading "Bearer ".
+const KEY = (process.env.TMDB_API_KEY || "").trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim();
 const SUPABASE_URL = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const REGION = process.env.TMDB_REGION || "DE";
@@ -23,7 +24,8 @@ const PROVIDERS = { n: 8, p: 9, d: 337 };
 const MAX_DROP = 0.2; // refuse to publish if the catalog shrinks by more than 20%: likely a TMDB hiccup, not reality
 
 if (!KEY) { console.error("TMDB_API_KEY is not set"); process.exit(1); }
-const auth = KEY.length > 40 ? { headers: { Authorization: `Bearer ${KEY}` } } : null;
+// A v4 read access token is a long JWT starting with "eyJ"; a v3 API key is 32 hex characters.
+const auth = KEY.startsWith("eyJ") ? { headers: { Authorization: `Bearer ${KEY}` } } : null;
 
 let active = 0;
 const waiting = [];
@@ -43,6 +45,10 @@ async function tmdb(path, params = {}) {
     if ((r.status === 429 || r.status >= 500) && attempt < 5) {
       await new Promise(res => setTimeout(res, 1000 * 2 ** attempt));
       continue;
+    }
+    if (r.status === 401) {
+      throw new Error(`TMDB rejected the key (${KEY.length} characters, starts with "${KEY.slice(0, 3)}"). ` +
+        "Paste either the 32-character API Key or the long API Read Access Token from themoviedb.org/settings/api into the TMDB_API_KEY secret.");
     }
     throw new Error(`TMDB ${r.status} for ${path}: ${await r.text()}`);
   }
