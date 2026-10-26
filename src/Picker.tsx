@@ -194,6 +194,28 @@ export default function Picker({ me }: { me: Member }) {
     : [];
   const visibleMatches = matches.filter(filterOk);
 
+  // "Pick for tonight": a short shuffle through the matches, then one stays. Uses the current filters,
+  // so switching to Series or one service narrows the draw.
+  const [tonight, setTonight] = useState<string | null>(null);
+  const [rolling, setRolling] = useState(false);
+  const rollTimer = useRef<number>(0);
+  useEffect(() => () => clearInterval(rollTimer.current), []);
+  function pickTonight() {
+    const pool = visibleMatches.length > 1 ? visibleMatches.filter(t => t.id !== tonight) : visibleMatches;
+    if (!pool.length) return;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let ticks = reduced || pool.length === 1 ? 0 : 10;
+    setRolling(ticks > 0);
+    clearInterval(rollTimer.current);
+    const land = () => { setTonight(pool[Math.floor(Math.random() * pool.length)].id); setRolling(false); };
+    if (!ticks) { land(); return; }
+    rollTimer.current = window.setInterval(() => {
+      setTonight(pool[Math.floor(Math.random() * pool.length)].id);
+      if (--ticks <= 0) { clearInterval(rollTimer.current); land(); }
+    }, 80);
+  }
+  const tonightTitle = tonight ? visibleMatches.find(t => t.id === tonight) : undefined;
+
   const who = (
     <div className="who">
       <span>{partner ? `${me.name || "You"} & ${partnerName}` : "Just you so far"}</span>
@@ -254,6 +276,29 @@ export default function Picker({ me }: { me: Member }) {
           : !visibleMatches.length ? <Empty title="No matches yet"
               text={matches.length ? `You have ${matches.length} match${matches.length > 1 ? "es" : ""} under other filters.` : "Keep liking titles. Anything you both like lands here."} />
           : <>
+              {tonightTitle ? (
+                <div className={"tonight" + (rolling ? " rolling" : "")} aria-live="polite">
+                  <span className="tonight-label">{rolling ? "Picking…" : "Tonight's pick"}</span>
+                  <div className="tonight-body">
+                    {tonightTitle.poster
+                      ? <img className="tonight-cover" src={posterUrl(tonightTitle, "w185")} alt="" />
+                      : <div className="tonight-cover" style={{ background: posterBg(tonightTitle) }} />}
+                    <div className="tonight-text">
+                      <h2>{tonightTitle.title}</h2>
+                      <div className="s">{[tonightTitle.year, tonightTitle.provs.map(p => PROV[p].name).join(", ")].filter(Boolean).join(" · ")}</div>
+                      {!rolling && <p>{tonightTitle.overview}</p>}
+                    </div>
+                  </div>
+                  {!rolling && (
+                    <div className="row">
+                      {visibleMatches.length > 1 && <button className="primary ghost" onClick={pickTonight}>Pick again</button>}
+                      <button className="primary" onClick={() => { const id = tonightTitle.id; setTonight(null); markSeen(id, true).then(() => showToast("Enjoy! Moved to Seen.")); }}>We watched it</button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button className="primary pick-btn" onClick={pickTonight}>🎲 Pick one for tonight</button>
+              )}
               <p className="section-note">You both liked these. Tap Watched after movie night and it moves to Seen.</p>
               <div className="list">{visibleMatches.map(t => (
                 <Item key={t.id} t={t} sub={[t.year, t.provs.map(p => PROV[p].name).join(", "), t.votes >= 10 ? "TMDB " + t.rating.toFixed(1) : ""].filter(Boolean).join(" · ")}>

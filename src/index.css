@@ -181,3 +181,16 @@ img.thumb.art { width: 52px; height: 78px; object-fit: cover; }
 }
 .field.code { width: 15ch; text-transform: uppercase; letter-spacing: .2em; font-weight: 700; text-align: center; }
 .error { color: var(--nope) !important; font-weight: 600; }
+
+/* Random "Tonight's pick" from the matches */
+.pick-btn { align-self: center; padding: 12px 22px; font-size: 16px; }
+.primary.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+.tonight { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; gap: 12px; border: 2px solid var(--gold); }
+.tonight-label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.tonight-body { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; align-items: start; }
+.tonight-cover { width: 96px; aspect-ratio: 2 / 3; border-radius: 10px; object-fit: cover; background: var(--surface-2); }
+.tonight-text h2 { font-family: var(--f-display); font-weight: 900; text-transform: uppercase; font-size: 28px; line-height: .95; margin: 0 0 6px; overflow-wrap: anywhere; }
+.tonight-text .s { font-size: 13px; color: var(--muted); }
+.tonight-text p { margin: 8px 0 0; color: var(--muted); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.tonight .row { justify-content: flex-end; }
+.tonight.rolling .tonight-body { opacity: .75; }
