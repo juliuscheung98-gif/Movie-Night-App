@@ -14,8 +14,12 @@ own phone; anything you both like becomes a match. "Seen it" is shared and hides
 1. Create a project at [supabase.com](https://supabase.com), region **Frankfurt (eu-central-1)**.
 2. **SQL Editor** → paste all of `supabase/migrations/0001_init.sql` → Run.
 3. **Authentication → URL Configuration:** set *Site URL* to your Vercel address (step 3), e.g.
-   `https://movie-night-xyz.vercel.app`. Add `http://localhost:5173` under *Redirect URLs* for local testing.
-4. **Project Settings → API:** note the *Project URL*, the *anon public* key and the *service_role* key.
+   `https://movie-night-xyz.vercel.app` (no `/**` here). Under *Redirect URLs* add `https://movie-night-xyz.vercel.app/**`,
+   and `http://localhost:5173/**` for local testing.
+4. **Authentication → Emails → Magic Link:** make the email show the sign-in code by adding this line to the template:
+   `<p>Your code: <strong>{{ .Token }}</strong></p>`. The app signs in with the code, which also works when it is
+   installed on the home screen.
+5. **Project Settings → API:** note the *Project URL*, the *anon public* key and the *service_role* key.
 
 ### 2. GitHub secrets (for the nightly catalog)
 
