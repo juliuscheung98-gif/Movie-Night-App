@@ -14,7 +14,7 @@ import { writeFile } from "node:fs/promises";
 
 // Tolerate common paste mistakes in the secret: spaces, line breaks, quotes, a leading "Bearer ".
 const KEY = (process.env.TMDB_API_KEY || "").trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim();
-const SUPABASE_URL = process.env.SUPABASE_URL?.replace(/\/$/, "");
+const SUPABASE_URL = process.env.SUPABASE_URL ? new URL(process.env.SUPABASE_URL.trim()).origin : undefined;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const REGION = process.env.TMDB_REGION || "DE";
 const LANGUAGE = process.env.TMDB_LANGUAGE || "en-US";
