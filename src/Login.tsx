@@ -1,61 +1,46 @@
 import { useState } from "react";
 import { supabase } from "./supabase";
 
-// Supabase puts a failed sign-in link's reason in the URL hash, e.g. #error_code=otp_expired.
-function linkError() {
-  const p = new URLSearchParams(location.hash.slice(1));
-  if (!p.get("error")) return "";
-  history.replaceState(null, "", location.pathname);
-  return p.get("error_code") === "otp_expired"
-    ? "That sign-in link was already used or has expired. Request a new one, or type the code from the email."
-    : p.get("error_description") || "Sign-in failed. Try again.";
-}
-
-// Passwordless: Supabase emails a code (and a link). Typing the code works even when the app runs from the home
-// screen, where tapping the link would open the browser instead.
+// Email + password, with "Confirm email" turned off in Supabase: no emails are sent, so there are no links to
+// expire and nothing breaks when the app runs from the home screen.
 export default function Login() {
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [state, setState] = useState<"idle" | "sending" | "sent" | "verifying">("idle");
-  const [error, setError] = useState(linkError);
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-  async function send(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setState("sending"); setError("");
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: location.origin } });
-    if (error) { setError(error.message); setState("idle"); } else setState("sent");
-  }
-
-  async function verify(e: React.FormEvent) {
-    e.preventDefault();
-    setState("verifying"); setError("");
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" });
+    setBusy(true); setError("");
+    const creds = { email: email.trim(), password };
+    const { data, error } = mode === "signin"
+      ? await supabase.auth.signInWithPassword(creds)
+      : await supabase.auth.signUp(creds);
+    setBusy(false);
     // On success the auth listener in App switches screens.
-    if (error) { setError(error.message); setState("sent"); }
+    if (error) setError(error.message === "Invalid login credentials"
+      ? "Wrong email or password. New here? Tap “Create an account” below."
+      : error.message);
+    else if (mode === "signup" && !data.session) {
+      setError("Account created, but Supabase wants an email confirmation. Turn off “Confirm email” (see README), then sign in.");
+    }
   }
 
-  if (state === "sent" || state === "verifying") {
-    return (
-      <form className="empty" onSubmit={verify}>
-        <h2>Check your email</h2>
-        <p>We sent a code to {email}. Type it here.</p>
-        <input className="field code" inputMode="numeric" autoComplete="one-time-code" placeholder="123456" maxLength={8}
-          value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} />
-        <button className="primary" disabled={state === "verifying" || code.length < 6}>
-          {state === "verifying" ? "Checking…" : "Sign in"}</button>
-        {error && <p className="error">{error}</p>}
-        <button type="button" className="linkbtn" onClick={() => { setState("idle"); setCode(""); setError(""); }}>Use another email</button>
-      </form>
-    );
-  }
   return (
-    <form className="empty" onSubmit={send}>
-      <h2>Sign in</h2>
+    <form className="empty" onSubmit={submit}>
+      <h2>{mode === "signin" ? "Sign in" : "Create an account"}</h2>
       <p>Swipe movies and series on your own phone. Anything you both like becomes a match.</p>
       <input className="field" type="email" required placeholder="you@example.com" autoComplete="email"
         value={email} onChange={e => setEmail(e.target.value)} />
-      <button className="primary" disabled={state === "sending"}>{state === "sending" ? "Sending…" : "Email me a sign-in code"}</button>
+      <input className="field" type="password" required minLength={6} placeholder="Password (6+ characters)"
+        autoComplete={mode === "signin" ? "current-password" : "new-password"}
+        value={password} onChange={e => setPassword(e.target.value)} />
+      <button className="primary" disabled={busy}>
+        {busy ? "One moment…" : mode === "signin" ? "Sign in" : "Create account"}</button>
       {error && <p className="error">{error}</p>}
+      <button type="button" className="linkbtn" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); }}>
+        {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}</button>
     </form>
   );
 }
