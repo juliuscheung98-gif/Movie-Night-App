@@ -4,7 +4,7 @@ Swipe movies and series on Netflix, Prime Video and Disney+ (Germany) with your 
 own phone; anything you both like becomes a match. "Seen it" is shared and hides the title for both of you.
 
 - **Frontend:** Vite + React, installable as a PWA, hosted on Vercel.
-- **Backend:** Supabase (email sign-in links, Postgres with Row Level Security, live updates).
+- **Backend:** Supabase (email + password sign-in, Postgres with Row Level Security, live updates).
 - **Catalog:** a nightly GitHub Action pulls titles from TMDB and uploads `catalog.json` to Supabase Storage.
 
 ## Setup (about 20 minutes, all free tiers)
@@ -13,13 +13,9 @@ own phone; anything you both like becomes a match. "Seen it" is shared and hides
 
 1. Create a project at [supabase.com](https://supabase.com), region **Frankfurt (eu-central-1)**.
 2. **SQL Editor** → paste all of `supabase/migrations/0001_init.sql` → Run.
-3. **Authentication → URL Configuration:** set *Site URL* to your Vercel address (step 3), e.g.
-   `https://movie-night-xyz.vercel.app` (no `/**` here). Under *Redirect URLs* add `https://movie-night-xyz.vercel.app/**`,
-   and `http://localhost:5173/**` for local testing.
-4. **Authentication → Emails → Magic Link:** make the email show the sign-in code by adding this line to the template:
-   `<p>Your code: <strong>{{ .Token }}</strong></p>`. The app signs in with the code, which also works when it is
-   installed on the home screen.
-5. **Project Settings → API:** note the *Project URL*, the *anon public* key and the *service_role* key.
+3. **Authentication → Sign In / Providers → Email:** keep Email enabled and turn **Confirm email** off. Sign-in is
+   email + password and no emails are sent, so nothing depends on Supabase's email templates or links.
+4. **Project Settings → API:** note the *Project URL*, the *anon public* key and the *service_role* key.
 
 ### 2. GitHub secrets (for the nightly catalog)
 
@@ -42,8 +38,8 @@ If the catalog ever shrinks by more than 20% in one night, the job fails instead
 
 ### 4. Use it
 
-Open the site on your phone, sign in with your email, enter your first name and tap **Start a new couple**. Your partner
-signs in on their phone and joins with the 6-letter code shown on the Matches tab. On iPhone: Share → *Add to Home
+Open the site on your phone, tap *Create an account* (email + password), enter your first name and tap **Start a new couple**. Your partner
+creates an account on their phone and joins with the 6-letter code shown on the Matches tab. On iPhone: Share → *Add to Home
 Screen*; on Android: menu → *Install app*.
 
 ## Local development
